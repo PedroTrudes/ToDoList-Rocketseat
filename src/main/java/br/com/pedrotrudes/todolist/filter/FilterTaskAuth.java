@@ -25,40 +25,42 @@ public class FilterTaskAuth extends OncePerRequestFilter{//usando Once pois esta
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-                //Pegar a autenticação(usuario e senha)
-                var authorization = request.getHeader("Authorization");
-               
-                //fazendo ele calcular o tamanho da string para poder retirar da variavel .trim remove o espaço em branco
-                var authEncode = authorization.substring("Basic".length()).trim();
+                var serveletPath = request.getServletPath();
 
-                byte[] authDecode = Base64.getDecoder().decode(authEncode);
-                var authString = new String(authDecode);
-
-                //pegando o authString e dividindo ele em um array de duas posições para pegar username e password
-                String[] credentials = authString.split(":");
-                String username = credentials[0];
-                String password = credentials[1];
-
-                System.out.println("Autorização");
-                System.out.println(authString);
-                System.out.println(username);
-                System.out.println(password);
-                
-                //Validar se ele existe
-
-                var user = this.userRepository.findByUsername(username);
-                if(user == null){
-                    response.sendError(401);
-                }else{
-                    //validar Senha
-                    var passwordVerify = BCrypt.verifyer().verify(password.toCharArray(), user.getPassword())
-                    if(passwordVerify.verified) {
+                if(serveletPath.equals("/task/")){
+                   //Pegar a autenticação(usuario e senha)
+                   var authorization = request.getHeader("Authorization");
+                  
+                   //fazendo ele calcular o tamanho da string para poder retirar da variavel .trim remove o espaço em branco
+                   var authEncode = authorization.substring("Basic".length()).trim();
+   
+                   byte[] authDecode = Base64.getDecoder().decode(authEncode);
+                   var authString = new String(authDecode);
+   
+                   //pegando o authString e dividindo ele em um array de duas posições para pegar username e password
+                   String[] credentials = authString.split(":");
+                   String username = credentials[0];
+                   String password = credentials[1];
+                      
+                   //Validar se ele existe
+   
+                   var user = this.userRepository.findByUsername(username);
+                   if(user == null){
+                       response.sendError(401);
+                   }else{
+                       //validar Senha
+                       var passwordVerify = BCrypt.verifyer().verify(password.toCharArray(), user.getPassword());
+                       if(passwordVerify.verified) {
+                        request.setAttribute("idUser", user.getId());  
                         filterChain.doFilter(request, response);
-                    }else{
-                        response.sendError(401);
-                    }
-                    //Continua...
-                    
+                       }else{
+                           response.sendError(401);
+                       }
+                       //Continua...
+                       
+                   }
+                }else{
+                     filterChain.doFilter(request, response);
                 }
     
     }
